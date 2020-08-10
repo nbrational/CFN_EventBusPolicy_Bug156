@@ -1,7 +1,6 @@
 
 # Workaround For CFN_EventBusPolicy_Bug156
 
-  
 
 ## Background
 
@@ -9,7 +8,7 @@ The main issue is being tracked under [aws-cloudformation-coverage-roadmap issue
 
 ## Issue Description
 
-ChangeSet creation fails if CloudFormation stack has resource type AWS::Event::EventBusPolicy which uses Condition property. Sample template code to replicate the issue: 
+ChangeSet creation fails if CloudFormation stack has resource type `AWS::Event::EventBusPolicy` which uses Condition property. Sample template code to replicate the issue: 
 
     Resources:
       CompanyEventBusPolicy:
@@ -23,7 +22,7 @@ ChangeSet creation fails if CloudFormation stack has resource type AWS::Event::E
             Key: aws:PrincipalOrgID
             Value: o-7gdn86yz4h
 
-Reason being that property 'Condition' collides with the CloudFormation intrinsic function called '[Condition](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/conditions-section-structure.html)'.
+Reason being that property `Condition` collides with the CloudFormation intrinsic function called '[Condition](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/conditions-section-structure.html)'.
 
 ## Workaround
 The workaround is to use CloudFormation [Custom Resource](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html) to implement creation, delete and update of EventBusPolicy. 
@@ -48,15 +47,19 @@ The template for Custom Resource accepts parameter called 'TheCondition' instead
 
 A Lambda execution role `AWS::IAM::Role` and `AWS::Lambda::Function` can be created in the same template. Refer to file **CustomResourceEventBusPolicyTemplate.yaml**
 
+Custom resource code `lambda_function.py` implements `Create`, `Delete` and `Update` for the CloudFormation custom resource to imitate the functionality of `AWS::Event::EventBusPolicy`.
+
+ChangeSet creation works alright using custom resource `Custom::CustomEventBusPolicy` in the template instead of `AWS::Event::EventBusPolicy`.
+
 ## Usage
 
 - Clone the repository
 - Upload Custom resource Lambda code `lambda_function.py` to an S3 bucket:
-- 
+
 	    zip function.zip lambda_function.py
 	    aws s3 mb s3://mylambdacodebucket
 	    aws s3 cp function.zip s3://mylambdacodebucket/
 
-- Update CustomResourceEventBusPolicyTemplate.yaml to replace **S3Bucket** and **PrincipalOrgID**
+- Update `CustomResourceEventBusPolicyTemplate.yaml` to replace **S3Bucket** and **PrincipalOrgID**
 
 - Create stack in CloudFormation console using CustomResourceEventBusPolicyTemplate.yaml
